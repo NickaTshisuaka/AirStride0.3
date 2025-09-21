@@ -29,18 +29,20 @@ const allowedOrigins = [
   "http://127.0.0.1:5173", // alternative localhost
   "http://www.airstride.co.za", // production domain
   "http://www.airstride.co.za.s3-website-us-east-1.amazonaws.com", // S3 hosted site
-  "http://98.89.166.198", // Elastic IP
+  "http://98.89.166.198", // Elastic IP without port
+  "http://98.89.166.198:3001", // ✅ Elastic IP with backend port
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow non-browser requests
-      if (!allowedOrigins.includes(origin)) {
-        const msg = `CORS policy does not allow access from: ${origin}`;
-        return callback(new Error(msg), false);
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      return callback(null, true);
+      return callback(
+        new Error(`CORS policy does not allow access from: ${origin}`),
+        false
+      );
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
@@ -144,7 +146,8 @@ app.post("/users/signup", async (req, res) => {
         .json({ error: "Password must be at least 6 characters long" });
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ error: "User already exists" });
+    if (existingUser)
+      return res.status(400).json({ error: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({
