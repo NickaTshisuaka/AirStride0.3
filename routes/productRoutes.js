@@ -1,4 +1,4 @@
-// actual-back-end/routes/productRoutes.js
+// routes/productRoutes.js
 import express from "express";
 import Product from "../models/Product.js";
 
@@ -10,73 +10,41 @@ router.get("/", async (req, res) => {
     const products = await Product.find();
     res.json(products);
   } catch (err) {
-    console.error("Error fetching products:", err);
-    res.status(500).json({ error: "Failed to fetch products" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// GET single product by ID
+// GET single product
 router.get("/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ error: "Product not found" });
+    if (!product) return res.status(404).json({ error: "Not found" });
     res.json(product);
   } catch (err) {
-    console.error("Error fetching product:", err);
-    res.status(500).json({ error: "Failed to fetch product" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// CREATE new product (basic, without image upload)
-router.post("/", async (req, res) => {
+// POST upload product
+router.post("/upload", async (req, res) => {
   try {
-    const { name, price, img } = req.body;
+    const { name, price, image } = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ error: "Name and price are required" });
     }
 
     const newProduct = new Product({
-      Product_name: name,
-      Price: price,
-      img: img || "/uploads/default.jpeg", // fallback image
+      name,
+      price,
+      image,
     });
 
     await newProduct.save();
-    res.status(201).json(newProduct);
+    res.json({ success: true, product: newProduct });
   } catch (err) {
-    console.error("Error creating product:", err);
-    res.status(500).json({ error: "Failed to create product" });
-  }
-});
-
-// UPDATE product by ID
-router.put("/:id", async (req, res) => {
-  try {
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true } // return updated doc
-    );
-    if (!updatedProduct)
-      return res.status(404).json({ error: "Product not found" });
-    res.json(updatedProduct);
-  } catch (err) {
-    console.error("Error updating product:", err);
-    res.status(500).json({ error: "Failed to update product" });
-  }
-});
-
-// DELETE product by ID
-router.delete("/:id", async (req, res) => {
-  try {
-    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
-    if (!deletedProduct)
-      return res.status(404).json({ error: "Product not found" });
-    res.json({ message: "Product deleted successfully" });
-  } catch (err) {
-    console.error("Error deleting product:", err);
-    res.status(500).json({ error: "Failed to delete product" });
+    console.error("Upload Error:", err);
+    res.status(500).json({ error: "Upload failed" });
   }
 });
 
